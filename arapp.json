@@ -1,13 +1,8 @@
 {
   "roles": [
     {
-      "name": "Increment the counter",
-      "id": "INCREMENT_ROLE",
-      "params": []
-    },
-    {
-      "name": "Decrement the counter",
-      "id": "DECREMENT_ROLE",
+      "name": "Create a reward",
+      "id": "CREATE_REWARD_ROLE",
       "params": []
     }
   ],
@@ -35,5 +30,5 @@
       "network": "mainnet"
     }
   },
-  "path": "contracts/CounterApp.sol"
+  "path": "contracts/StablecoinRewards.sol"
 }

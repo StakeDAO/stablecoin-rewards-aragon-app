@@ -3,7 +3,7 @@ pragma solidity 0.4.24;
 import "@aragon/templates-shared/contracts/TokenCache.sol";
 import "@aragon/templates-shared/contracts/BaseTemplate.sol";
 
-import "./CounterApp.sol";
+import "./StablecoinRewards.sol";
 
 
 contract Template is BaseTemplate, TokenCache {
@@ -124,30 +124,29 @@ contract Template is BaseTemplate, TokenCache {
     )
         internal
     {
-        CounterApp app = _installCounterApp(_dao);
-        _createCounterAppPermissions(_acl, app, _voting, _voting);
+        StablecoinRewards app = _installStablecoinRewards(_dao);
+        _createStablecoinRewardsPermissions(_acl, app, _voting, _voting);
     }
 
-    function _installCounterApp(
+    function _installStablecoinRewards(
         Kernel _dao
     )
-        internal returns (CounterApp)
+        internal returns (StablecoinRewards)
     {
         bytes32 _appId = keccak256(abi.encodePacked(apmNamehash("open"), keccak256("stablecoin-rewards")));
-        bytes memory initializeData = abi.encodeWithSelector(CounterApp(0).initialize.selector);
-        return CounterApp(_installDefaultApp(_dao, _appId, initializeData));
+        bytes memory initializeData = abi.encodeWithSelector(StablecoinRewards(0).initialize.selector);
+        return StablecoinRewards(_installDefaultApp(_dao, _appId, initializeData));
     }
 
-    function _createCounterAppPermissions(
+    function _createStablecoinRewardsPermissions(
         ACL _acl,
-        CounterApp _app,
+        StablecoinRewards _app,
         address _grantee,
         address _manager
     )
         internal
     {
-        _acl.createPermission(_grantee, _app, _app.INCREMENT_ROLE(), _manager);
-        _acl.createPermission(ANY_ENTITY, _app, _app.DECREMENT_ROLE(), _manager);
+        _acl.createPermission(ANY_ENTITY, _app, _app.CREATE_REWARD_ROLE(), _manager);
     }
 
     //--------------------------------------------------------------//

@@ -1,5 +1,5 @@
 /* global artifacts */
-var CounterApp = artifacts.require('CounterApp.sol')
+var CounterApp = artifacts.require('StablecoinRewards.sol')
 
 module.exports = function(deployer) {
   deployer.deploy(CounterApp)

@@ -9,6 +9,9 @@ previous one's earnings.
 The contract is originally based on this Synthetix Unipool implementation: 
 https://github.com/Synthetixio/Unipool/blob/master/contracts/Unipool.sol
 
+This app also uses the Aragon Token Wrapper found here: 
+https://github.com/aragonone/voting-connectors
+
 ## Local Deployment
 
 Install dependencies:
@@ -16,22 +19,3 @@ Install dependencies:
 $ npm install
 ```
 May require `npm install node-gyp` first
-
-### Test
-```
-$ npm run test
-```
-
-### App Deployment
-In a separate terminal start the devchain:
-```
-$ npx aragon devchain
-```
-In a separate terminal start the client (the web portion of the app):
-```
-$ npm run start:app
-```
-In a separate terminal deploy the DAO with:
-```
-$ npm run start:http:template
-```

@@ -4,7 +4,7 @@ const { assertRevert } = require('@aragon/test-helpers/assertThrow')
 const { hash } = require('eth-ens-namehash')
 const deployDAO = require('./helpers/deployDAO')
 
-const CounterApp = artifacts.require('CounterApp.sol')
+const CounterApp = artifacts.require('StablecoinRewards.sol')
 
 const ANY_ADDRESS = '0xffffffffffffffffffffffffffffffffffffffff'
 
