@@ -3,10 +3,15 @@ pragma solidity 0.4.24;
 import "@aragon/templates-shared/contracts/TokenCache.sol";
 import "@aragon/templates-shared/contracts/BaseTemplate.sol";
 
-import "./StablecoinRewards.sol";
-
+import "../dependencies/ITokenWrapper.sol";
+import "../dependencies/ICycleManager.sol";
+import "../StablecoinRewards.sol";
 
 contract Template is BaseTemplate, TokenCache {
+
+    // token-wrapper-sc.open.aragonpm.eth for local deployment
+//    bytes32 constant internal TOKEN_WRAPPER_ID = 0x3482986293858da5c1bbfd8098f815afbef521eccb1f1739244610fc0bebb10a;
+
     string constant private ERROR_EMPTY_HOLDERS = "TEMPLATE_EMPTY_HOLDERS";
     string constant private ERROR_BAD_HOLDERS_STAKES_LEN = "TEMPLATE_BAD_HOLDERS_STAKES_LEN";
     string constant private ERROR_BAD_VOTE_SETTINGS = "TEMPLATE_BAD_VOTE_SETTINGS";
@@ -37,17 +42,9 @@ contract Template is BaseTemplate, TokenCache {
     * @param _stakes Array of token stakes for holders (token has 18 decimals, multiply token amount `* 10^18`)
     * @param _votingSettings Array of [supportRequired, minAcceptanceQuorum, voteDuration] to set up the voting app of the organization
     */
-    function newTokenAndInstance(
-        string _tokenName,
-        string _tokenSymbol,
-        address[] _holders,
-        uint256[] _stakes,
-        uint64[3] _votingSettings
-    )
-        external
-    {
+    function newTokenAndInstance(ERC20 _sctToken, ERC20 _stablecoin, string _tokenName, string _tokenSymbol, address[] _holders, uint256[] _stakes, uint64[3] _votingSettings) external {
         newToken(_tokenName, _tokenSymbol);
-        newInstance(_holders, _stakes, _votingSettings);
+        newInstance(_sctToken, _stablecoin, _holders, _stakes, _votingSettings);
     }
 
     /**
@@ -67,32 +64,19 @@ contract Template is BaseTemplate, TokenCache {
     * @param _stakes Array of token stakes for holders (token has 18 decimals, multiply token amount `* 10^18`)
     * @param _votingSettings Array of [supportRequired, minAcceptanceQuorum, voteDuration] to set up the voting app of the organization
     */
-    function newInstance(
-        address[] memory _holders,
-        uint256[] memory _stakes,
-        uint64[3] memory _votingSettings
-    )
-        public
-    {
+    function newInstance(ERC20 _sctToken, ERC20 _stablecoin, address[] memory _holders, uint256[] memory _stakes, uint64[3] memory _votingSettings) public {
         _ensureTemplateSettings(_holders, _stakes, _votingSettings);
 
         (Kernel dao, ACL acl) = _createDAO();
         (Voting voting) = _setupBaseApps(dao, acl, _holders, _stakes, _votingSettings);
-        // Setup stablecoin-rewards app
-        _setupCustomApp(dao, acl, voting);
+
+        ITokenWrapper tokenWrapper = _setupTokenWrapper(dao, acl, _sctToken, voting);
+        ICycleManager cycleManager = _setupCycleManager(dao, acl, voting);
+        _setupCustomApp(dao, acl, voting, tokenWrapper, _stablecoin);
         _transferRootPermissionsFromTemplateAndFinalizeDAO(dao, voting);
     }
 
-    function _setupBaseApps(
-        Kernel _dao,
-        ACL _acl,
-        address[] memory _holders,
-        uint256[] memory _stakes,
-        uint64[3] memory _votingSettings
-    )
-        internal
-        returns (Voting)
-    {
+    function _setupBaseApps(Kernel _dao, ACL _acl, address[] memory _holders, uint256[] memory _stakes, uint64[3] memory _votingSettings) internal returns (Voting){
         MiniMeToken token = _popTokenCache(msg.sender);
         TokenManager tokenManager = _installTokenManagerApp(_dao, token, TOKEN_TRANSFERABLE, TOKEN_MAX_PER_ACCOUNT);
         Voting voting = _installVotingApp(_dao, token, _votingSettings);
@@ -103,62 +87,44 @@ contract Template is BaseTemplate, TokenCache {
         return (voting);
     }
 
-    function _setupBasePermissions(
-        ACL _acl,
-        Voting _voting,
-        TokenManager _tokenManager
-    )
-        internal
-    {
+    function _setupBasePermissions(ACL _acl, Voting _voting, TokenManager _tokenManager) internal {
         _createEvmScriptsRegistryPermissions(_acl, _voting, _voting);
         _createVotingPermissions(_acl, _voting, _voting, _tokenManager, _voting);
         _createTokenManagerPermissions(_acl, _tokenManager, _voting, _voting);
     }
 
-    // Next we install and create permissions for the stablecoin-rewards app
-    //--------------------------------------------------------------//
-    function _setupCustomApp(
-        Kernel _dao,
-        ACL _acl,
-        Voting _voting
-    )
-        internal
-    {
-        StablecoinRewards app = _installStablecoinRewards(_dao);
-        _createStablecoinRewardsPermissions(_acl, app, _voting, _voting);
+    function _setupCycleManager(Kernel _dao, ACL _acl, Voting _voting) internal returns (ICycleManager) {
+        bytes32 _appId = keccak256(abi.encodePacked(apmNamehash("open"), keccak256("cycle-manager")));
+        bytes memory initializeData = abi.encodeWithSelector(ICycleManager(0).initialize.selector, 50);
+        ICycleManager cycleManager = ICycleManager(_installDefaultApp(_dao, _appId, initializeData));
+
+        _acl.createPermission(ANY_ENTITY, cycleManager, cycleManager.UPDATE_CYCLE_ROLE(), _voting);
+        _acl.createPermission(ANY_ENTITY, cycleManager, cycleManager.START_CYCLE_ROLE(), _voting);
+
+        return cycleManager;
     }
 
-    function _installStablecoinRewards(
-        Kernel _dao
-    )
-        internal returns (StablecoinRewards)
-    {
+    function _setupTokenWrapper(Kernel _dao, ACL _acl, ERC20 _sctToken, Voting _teamVoting) internal returns (ITokenWrapper) {
+        bytes32 _appId = keccak256(abi.encodePacked(apmNamehash("open"), keccak256("token-wrapper-sc")));
+        ITokenWrapper tokenWrapper = ITokenWrapper(_installNonDefaultApp(_dao, _appId));
+        tokenWrapper.initialize(_sctToken, "Wrapped SCT", "wSCT");
+
+        _acl.createPermission(address(-1), tokenWrapper, tokenWrapper.DEPOSIT_TO_ROLE(), _teamVoting);
+        _acl.createPermission(address(-1), tokenWrapper, tokenWrapper.WITHDRAW_FOR_ROLE(), _teamVoting);
+
+        return tokenWrapper;
+    }
+
+    function _setupCustomApp(Kernel _dao, ACL _acl, Voting _voting, ITokenWrapper _tokenWrapper, ERC20 _stablecoin) internal {
         bytes32 _appId = keccak256(abi.encodePacked(apmNamehash("open"), keccak256("stablecoin-rewards")));
-        bytes memory initializeData = abi.encodeWithSelector(StablecoinRewards(0).initialize.selector);
-        return StablecoinRewards(_installDefaultApp(_dao, _appId, initializeData));
+        // TODO: Replace first TokenWrapper with CycleManager!
+        bytes memory initializeData = abi.encodeWithSelector(StablecoinRewards(0).initialize.selector, _tokenWrapper, _tokenWrapper, _stablecoin);
+        StablecoinRewards stablecoinRewards = StablecoinRewards(_installDefaultApp(_dao, _appId, initializeData));
+
+        _acl.createPermission(ANY_ENTITY, stablecoinRewards, stablecoinRewards.CREATE_REWARD_ROLE(), _voting);
     }
 
-    function _createStablecoinRewardsPermissions(
-        ACL _acl,
-        StablecoinRewards _app,
-        address _grantee,
-        address _manager
-    )
-        internal
-    {
-        _acl.createPermission(ANY_ENTITY, _app, _app.CREATE_REWARD_ROLE(), _manager);
-    }
-
-    //--------------------------------------------------------------//
-
-    function _ensureTemplateSettings(
-        address[] memory _holders,
-        uint256[] memory _stakes,
-        uint64[3] memory _votingSettings
-    )
-        private
-        pure
-    {
+    function _ensureTemplateSettings(address[] memory _holders, uint256[] memory _stakes, uint64[3] memory _votingSettings) private pure {
         require(_holders.length > 0, ERROR_EMPTY_HOLDERS);
         require(_holders.length == _stakes.length, ERROR_BAD_HOLDERS_STAKES_LEN);
         require(_votingSettings.length == 3, ERROR_BAD_VOTE_SETTINGS);

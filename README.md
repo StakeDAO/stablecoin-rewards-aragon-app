@@ -9,13 +9,45 @@ previous one's earnings.
 The contract is originally based on this Synthetix Unipool implementation: 
 https://github.com/Synthetixio/Unipool/blob/master/contracts/Unipool.sol
 
-This app also uses the Aragon Token Wrapper found here: 
+This app also uses a forked version of the Aragon Token Wrapper found here: 
 https://github.com/aragonone/voting-connectors
 
 ## Local Deployment
 
-Install dependencies:
+1) Install dependencies:
 ```
 $ npm install
 ```
 May require `npm install node-gyp` first
+
+2) In a separate terminal start the devchain:
+```
+$ npx aragon devchain
+```
+
+3) Deploy the Token-Wrapper to the devchain as it's not installed by default like the other main apps (Voting, Token Manager, Agent etc):
+- Download https://github.com/StakeDAO/voting-connectors
+- Run `npm install` in the `apps/token-wrapper` folder
+- Execute `npm run apm:publish major`
+
+4) Deploy the CycleManager app to the devchain as it's not installed by default like the other main apps (Voting, Token Manager, Agent etc):
+- Download https://github.com/StakeDAO/cycle-manager-aragon-app
+- Run `npm install` in the root folder
+- Execute `npm run build` in the root folder
+- Execute `npm run publish:major` in the root folder
+
+5) Deploy mock SCT and DAI and tokens:
+```
+$ truffle exec scripts/deployTokens.sol --network rpc
+```
+Copy the SCT and DAI token addresses output to the `package.json` script `start:http:template` directly after the `--template-args` arg
+replacing the 2 addresses that are there already.
+
+6) In a separate terminal start the client (the web portion of the app):
+```
+$ npm run start:app
+```
+7) In a separate terminal deploy a DAO including the app with:
+```
+$ npm run start:http:template
+```

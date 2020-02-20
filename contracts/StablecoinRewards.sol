@@ -3,14 +3,17 @@ pragma solidity ^0.4.24;
 import "@aragon/os/contracts/apps/AragonApp.sol";
 import "@aragon/os/contracts/lib/math/SafeMath.sol";
 import "@aragon/os/contracts/lib/token/ERC20.sol";
-import "@aragonone/apps-token-wrapper/contracts/TokenWrapper.sol"; // TODO: Fork the token wrapper, add permissions, add depositFor and withdrawFor
-import "./ICycleManager.sol";
+import "./dependencies/ICycleManager.sol";
+import "./dependencies/ITokenWrapper.sol";
 
 // TODO: Consider generalizing the naming, replacing stablecoin with something more generic.
 contract StablecoinRewards is AragonApp {
     using SafeMath for uint256;
+    using SafeERC20 for ERC20;
 
     bytes32 constant public CREATE_REWARD_ROLE = keccak256("CREATE_REWARD_ROLE");
+
+    string private constant ERROR_TOKEN_TRANSFER_FROM_FAILED = "SR_TOKEN_TRANSFER_FROM_FAILED";
 
     uint256 public periodFinish = 0;
     uint256 public rewardRate = 0;
@@ -20,7 +23,7 @@ contract StablecoinRewards is AragonApp {
     mapping(address => uint256) public rewards;
 
     ICycleManager cycleManager;
-    TokenWrapper wrappedSct;
+    ITokenWrapper wrappedSct;
     ERC20 stablecoin;
 
     event RewardAdded(uint256 reward);
@@ -38,7 +41,7 @@ contract StablecoinRewards is AragonApp {
         _;
     }
 
-    function initialize(ICycleManager _cycleManager, TokenWrapper _wrappedSct, ERC20 _stablecoin) public onlyInit {
+    function initialize(ICycleManager _cycleManager, ITokenWrapper _wrappedSct, ERC20 _stablecoin) public onlyInit {
         cycleManager = _cycleManager;
         wrappedSct = _wrappedSct;
         stablecoin = _stablecoin;
@@ -78,15 +81,17 @@ contract StablecoinRewards is AragonApp {
     // stake visibility is public as overriding LPTokenWrapper's stake() function
     function stake(uint256 amount) public updateReward(msg.sender) {
         require(amount > 0, "Cannot stake 0");
-        // TODO: Replace with depositFor
-        wrappedSct.deposit(amount);
+        ERC20 depositedToken = wrappedSct.depositedToken();
+        require(depositedToken.safeTransferFrom(msg.sender, address(this), amount), ERROR_TOKEN_TRANSFER_FROM_FAILED);
+
+        wrappedSct.depositTo(amount, msg.sender);
         emit Staked(msg.sender, amount);
     }
 
     function withdraw(uint256 amount) public updateReward(msg.sender) {
         require(amount > 0, "Cannot withdraw 0");
-        // TODO: Replace with withdrawFor
-        wrappedSct.withdraw(amount);
+
+        wrappedSct.withdrawFor(amount, msg.sender);
         emit Withdrawn(msg.sender, amount);
     }
 
