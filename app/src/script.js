@@ -1,6 +1,7 @@
 import 'core-js/stable'
 import 'regenerator-runtime/runtime'
 import Aragon, { events } from '@aragon/api'
+import { first } from 'rxjs/operators'
 
 const app = new Aragon()
 
@@ -12,10 +13,14 @@ app.store(
 
     try {
       switch (event) {
-        case 'Increment':
-          return { ...nextState, count: await getValue() }
-        case 'Decrement':
-          return { ...nextState, count: await getValue() }
+        case 'Staked':
+          return { ...nextState, earned: await getEarned() }
+        case 'Withdrawn':
+          return { ...nextState, earned: await getEarned() }
+        case 'RewardPaid':
+          return { ...nextState, earned: await getEarned() }
+        case 'RewardAdded':
+          return { ...nextState, earned: await getEarned() }
         case events.SYNC_STATUS_SYNCING:
           return { ...nextState, isSyncing: true }
         case events.SYNC_STATUS_SYNCED:
@@ -43,10 +48,12 @@ function initializeState() {
     return {
       ...cachedState,
       count: 0,
+      earned: await getEarned()
     }
   }
 }
 
-async function getValue() {
-  return parseInt(await app.call('value').toPromise(), 10)
+const getEarned = async () => {
+  const address = (await app.accounts().pipe(first()).toPromise())[0]
+  return parseInt(await app.call('earned', address).toPromise(), 10)
 }

@@ -1,49 +1,45 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { useAragonApi } from '@aragon/api-react'
 import {
   Box,
   Button,
   GU,
   Header,
-  IconMinus,
-  IconPlus,
   Main,
   SyncIndicator,
-  Tabs,
   Text,
   textStyle,
+  TextInput
 } from '@aragon/ui'
 import styled from 'styled-components'
 
 function App() {
-  const { api, appState, path, requestPath } = useAragonApi()
-  const { count, isSyncing } = appState
+  const { api, appState, currentApp } = useAragonApi()
+  const { isSyncing, earned } = appState
 
-  const pathParts = path.match(/^\/tab\/([0-9]+)/)
-  const pageIndex = Array.isArray(pathParts)
-    ? parseInt(pathParts[1], 10) - 1
-    : 0
+  const [stakeAmount, setStakeAmount] = useState(0)
+  const [withdrawAmount, setWithdrawAmount] = useState(0)
+  const [rewardAmount, setRewardAmount] = useState(0)
+
+  const stake = () => {
+    console.log("HOLA")
+    api.stake(stakeAmount, {token: { address: currentApp.appAddress, value: stakeAmount }, gas: 500000 }).toPromise()
+  }
 
   return (
     <Main>
       {isSyncing && <SyncIndicator />}
       <Header
-        primary="Counter"
+        primary="Stablecoin Rewards"
         secondary={
           <Text
             css={`
               ${textStyle('title2')}
             `}
-          >
-            {count}
-          </Text>
+          />
         }
       />
-      <Tabs
-        items={['Tab 1', 'Tab 2']}
-        selected={pageIndex}
-        onChange={index => requestPath(`/tab/${index + 1}`)}
-      />
+
       <Box
         css={`
           display: flex;
@@ -54,23 +50,54 @@ function App() {
           ${textStyle('title3')};
         `}
       >
-        Count: {count}
+        Earned: {earned}
         <Buttons>
+
+          <div>
+            <TextInput
+              value={stakeAmount}
+              onChange={event => {setStakeAmount(event.target.value)}}
+            />
+
+            <Button
+              css={`margin-left: 20px`}
+              label="Stake"
+              onClick={() => stake()}
+            />
+          </div>
+
+
+          <div>
+            <TextInput
+              value={withdrawAmount}
+              onChange={event => {setWithdrawAmount(event.target.value)}}
+            />
+
+            <Button
+              css={`margin-left: 20px`}
+              label="Withdraw"
+              onClick={() => api.withdraw(withdrawAmount).toPromise()}
+            />
+          </div>
+
           <Button
-            display="icon"
-            icon={<IconMinus />}
-            label="Decrement"
-            onClick={() => api.decrement(1).toPromise()}
+            label="Claim Reward"
+            onClick={() => api.getReward().toPromise()}
           />
-          <Button
-            display="icon"
-            icon={<IconPlus />}
-            label="Increment"
-            onClick={() => api.increment(1).toPromise()}
-            css={`
-              margin-left: ${2 * GU}px;
-            `}
-          />
+
+          <div>
+            <TextInput
+              value={rewardAmount}
+              onChange={event => {setRewardAmount(event.target.value)}}
+            />
+
+            <Button
+              css={`margin-left: 20px`}
+              label="Distribute Reward"
+              onClick={() => api.notifyRewardAmount(rewardAmount).toPromise()}
+            />
+          </div>
+
         </Buttons>
       </Box>
     </Main>
@@ -79,7 +106,7 @@ function App() {
 
 const Buttons = styled.div`
   display: grid;
-  grid-auto-flow: column;
+  grid-auto-flow: row;
   grid-gap: 40px;
   margin-top: 20px;
 `
