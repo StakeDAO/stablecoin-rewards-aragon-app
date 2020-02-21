@@ -72,7 +72,7 @@ contract Template is BaseTemplate, TokenCache {
 
         ITokenWrapper tokenWrapper = _setupTokenWrapper(dao, acl, _sctToken, voting);
         ICycleManager cycleManager = _setupCycleManager(dao, acl, voting);
-        _setupCustomApp(dao, acl, voting, tokenWrapper, _stablecoin);
+        _setupCustomApp(dao, acl, voting, cycleManager, tokenWrapper, _stablecoin);
         _transferRootPermissionsFromTemplateAndFinalizeDAO(dao, voting);
     }
 
@@ -115,10 +115,9 @@ contract Template is BaseTemplate, TokenCache {
         return tokenWrapper;
     }
 
-    function _setupCustomApp(Kernel _dao, ACL _acl, Voting _voting, ITokenWrapper _tokenWrapper, ERC20 _stablecoin) internal {
+    function _setupCustomApp(Kernel _dao, ACL _acl, Voting _voting, ICycleManager _cycleManager, ITokenWrapper _tokenWrapper, ERC20 _stablecoin) internal {
         bytes32 _appId = keccak256(abi.encodePacked(apmNamehash("open"), keccak256("stablecoin-rewards")));
-        // TODO: Replace first TokenWrapper with CycleManager!
-        bytes memory initializeData = abi.encodeWithSelector(StablecoinRewards(0).initialize.selector, _tokenWrapper, _tokenWrapper, _stablecoin);
+        bytes memory initializeData = abi.encodeWithSelector(StablecoinRewards(0).initialize.selector, _cycleManager, _tokenWrapper, _stablecoin);
         StablecoinRewards stablecoinRewards = StablecoinRewards(_installDefaultApp(_dao, _appId, initializeData));
 
         _acl.createPermission(ANY_ENTITY, stablecoinRewards, stablecoinRewards.CREATE_REWARD_ROLE(), _voting);

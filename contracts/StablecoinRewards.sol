@@ -110,6 +110,9 @@ contract StablecoinRewards is AragonApp {
         getReward();
     }
 
+    /**
+     * @notice Claim available reward amount
+     */
     function getReward() public updateReward(msg.sender) {
         uint256 reward = earned(msg.sender);
         if (reward > 0) {
@@ -119,18 +122,24 @@ contract StablecoinRewards is AragonApp {
         }
     }
 
-    // This must be called before a new cycle is started, to prevent any updates to cycle length effecting the calculations
+    /**
+     * @dev This must be called before a new cycle is started, to prevent any updates to cycle length effecting the calculations
+     * @notice Create a reward of `@tokenAmount(self.stablecoin: address, reward, true, 18)`
+     * @param reward The amount of the reward
+     */
     function notifyRewardAmount(uint256 reward)
     external
     auth(CREATE_REWARD_ROLE)
     updateReward(address(0))
     {
+        require(stablecoin.safeTransferFrom(msg.sender, address(this), reward), ERROR_TOKEN_TRANSFER_FROM_FAILED);
+
         if (block.timestamp >= periodFinish) {
             rewardRate = reward.div(cycleManager.cycleLength());
         } else {
-            uint256 remaining = periodFinish.sub(block.timestamp);
-            uint256 leftover = remaining.mul(rewardRate);
-            rewardRate = reward.add(leftover).div(cycleManager.cycleLength());
+            uint256 remainingTime = periodFinish.sub(block.timestamp);
+            uint256 leftoverReward = remainingTime.mul(rewardRate);
+            rewardRate = reward.add(leftoverReward).div(cycleManager.cycleLength());
         }
         lastUpdateTime = block.timestamp;
         periodFinish = block.timestamp.add(cycleManager.cycleLength());

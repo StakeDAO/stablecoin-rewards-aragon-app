@@ -16,9 +16,15 @@ import {fromDecimals, toDecimals} from './utils'
 
 function App() {
   const { api, appState } = useAragonApi()
-  const { isSyncing, sctBalance, sctTokenWrapperBalance, stablecoinBalance, sctAddress, earned } = appState
-
-  console.log("SCT", sctBalance)
+  const {
+    isSyncing,
+    sctBalance,
+    sctTokenWrapperBalance,
+    stablecoinBalance,
+    sctAddress,
+    stablecoinAddress,
+    earned
+  } = appState
 
   const [stakeAmount, setStakeAmount] = useState(0)
   const [withdrawAmount, setWithdrawAmount] = useState(0)
@@ -26,7 +32,12 @@ function App() {
 
   const stake = () => {
     const stakeAmountWithDecimals = toDecimals(stakeAmount, 18)
-    api.stake(stakeAmountWithDecimals, {token: { address: sctAddress, value: stakeAmount }, gas: 500000 }).toPromise()
+    api.stake(stakeAmountWithDecimals, {token: { address: sctAddress, value: stakeAmountWithDecimals }, gas: 500000 }).toPromise()
+  }
+
+  const createReward = () => {
+    const rewardAmountWithDecimals = toDecimals(rewardAmount, 18)
+    api.notifyRewardAmount(rewardAmountWithDecimals,  {token: { address: stablecoinAddress, value: rewardAmountWithDecimals }, gas: 500000 }).toPromise()
   }
 
   return (
@@ -103,7 +114,7 @@ function App() {
             <Button
               css={`margin-left: 20px`}
               label="Distribute Reward"
-              onClick={() => api.notifyRewardAmount(toDecimals(rewardAmount, 18)).toPromise()}
+              onClick={createReward}
             />
           </div>
 

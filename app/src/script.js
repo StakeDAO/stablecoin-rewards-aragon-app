@@ -28,7 +28,9 @@ app.store(
             stablecoinBalance: await getStablecoinBalance(),
             sctBalance: await getSctBalance() }
         case 'RewardPaid':
-          return { ...nextState, earned: await getEarned() }
+          return { ...nextState,
+            earned: await getEarned(),
+            sctBalance: await getSctBalance() }
         case 'RewardAdded':
           return { ...nextState, earned: await getEarned() }
         case events.SYNC_STATUS_SYNCING:
@@ -64,6 +66,7 @@ function initializeState() {
     return {
       ...cachedState,
       sctAddress: await getSctAddress(),
+      stablecoinAddress: await getStablecoinAddress(),
       earned: await getEarned(),
       sctTokenWrapperBalance: await getSctTokenWrapperBalance(),
       stablecoinBalance: await getStablecoinBalance(),
@@ -75,7 +78,7 @@ function initializeState() {
 const currentAddress = async () => (await app.accounts().pipe(first()).toPromise())[0]
 
 const getEarned = async () => {
-  return parseInt(await app.call('earned', await currentAddress()).toPromise(), 10)
+  return await app.call('earned', await currentAddress()).toPromise()
 }
 
 const sctTokenWrapper$ = () =>
@@ -86,6 +89,10 @@ const getSctAddress = async () => {
   return await sctTokenWrapper$().pipe(
     mergeMap(sctTokenWrapper => sctTokenWrapper.depositedToken())
   ).toPromise()
+}
+
+const getStablecoinAddress = async () => {
+  return await app.call('stablecoin').toPromise()
 }
 
 const getSctTokenWrapperBalance = async () => {
