@@ -12,18 +12,21 @@ import {
   TextInput
 } from '@aragon/ui'
 import styled from 'styled-components'
+import {fromDecimals, toDecimals} from './utils'
 
 function App() {
-  const { api, appState, currentApp } = useAragonApi()
-  const { isSyncing, earned } = appState
+  const { api, appState } = useAragonApi()
+  const { isSyncing, sctBalance, sctTokenWrapperBalance, stablecoinBalance, sctAddress, earned } = appState
+
+  console.log("SCT", sctBalance)
 
   const [stakeAmount, setStakeAmount] = useState(0)
   const [withdrawAmount, setWithdrawAmount] = useState(0)
   const [rewardAmount, setRewardAmount] = useState(0)
 
   const stake = () => {
-    console.log("HOLA")
-    api.stake(stakeAmount, {token: { address: currentApp.appAddress, value: stakeAmount }, gas: 500000 }).toPromise()
+    const stakeAmountWithDecimals = toDecimals(stakeAmount, 18)
+    api.stake(stakeAmountWithDecimals, {token: { address: sctAddress, value: stakeAmount }, gas: 500000 }).toPromise()
   }
 
   return (
@@ -46,11 +49,18 @@ function App() {
           align-items: center;
           justify-content: center;
           text-align: center;
-          height: ${50 * GU}px;
           ${textStyle('title3')};
         `}
       >
-        Earned: {earned}
+
+        SCT Balance: {fromDecimals(sctBalance ? sctBalance : "", 18)}
+        <br/>
+        Wrapped SCT: {fromDecimals(sctTokenWrapperBalance ? sctTokenWrapperBalance : "", 18)}
+        <br/>
+        Stablecoin (DAI) Balance: {fromDecimals(stablecoinBalance ? stablecoinBalance : "", 18)}
+        <br/>
+        Claimable Reward: {fromDecimals(earned ? earned : "", 18)}
+
         <Buttons>
 
           <div>
@@ -62,10 +72,9 @@ function App() {
             <Button
               css={`margin-left: 20px`}
               label="Stake"
-              onClick={() => stake()}
+              onClick={stake}
             />
           </div>
-
 
           <div>
             <TextInput
@@ -76,7 +85,7 @@ function App() {
             <Button
               css={`margin-left: 20px`}
               label="Withdraw"
-              onClick={() => api.withdraw(withdrawAmount).toPromise()}
+              onClick={() => {api.withdraw(toDecimals(withdrawAmount, 18)).toPromise()}}
             />
           </div>
 
@@ -94,7 +103,7 @@ function App() {
             <Button
               css={`margin-left: 20px`}
               label="Distribute Reward"
-              onClick={() => api.notifyRewardAmount(rewardAmount).toPromise()}
+              onClick={() => api.notifyRewardAmount(toDecimals(rewardAmount, 18)).toPromise()}
             />
           </div>
 

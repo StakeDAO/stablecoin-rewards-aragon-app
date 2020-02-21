@@ -9,10 +9,9 @@ contract ITokenWrapper is ERC20 {
 
     function initialize(ERC20 _depositedToken, string _name, string _symbol) external;
 
-    function depositedToken() public returns (ERC20);
+    function depositedToken() public view returns (ERC20);
 
     function depositTo(uint256 _amount, address _to) external;
 
     function withdrawFor(uint256 _amount, address _forAddress) external;
-
 }

@@ -14,6 +14,7 @@ contract StablecoinRewards is AragonApp {
     bytes32 constant public CREATE_REWARD_ROLE = keccak256("CREATE_REWARD_ROLE");
 
     string private constant ERROR_TOKEN_TRANSFER_FROM_FAILED = "SR_TOKEN_TRANSFER_FROM_FAILED";
+    string private constant ERROR_TOKEN_APPROVE_FAILED = "SR_TOKEN_APPROVE_FAILED";
 
     uint256 public periodFinish = 0;
     uint256 public rewardRate = 0;
@@ -22,9 +23,9 @@ contract StablecoinRewards is AragonApp {
     mapping(address => uint256) public userRewardPerTokenPaid;
     mapping(address => uint256) public rewards;
 
-    ICycleManager cycleManager;
-    ITokenWrapper wrappedSct;
-    ERC20 stablecoin;
+    ICycleManager public cycleManager;
+    ITokenWrapper public wrappedSct;
+    ERC20 public stablecoin;
 
     event RewardAdded(uint256 reward);
     event Staked(address indexed user, uint256 amount);
@@ -78,16 +79,25 @@ contract StablecoinRewards is AragonApp {
         .add(rewards[account]);
     }
 
-    // stake visibility is public as overriding LPTokenWrapper's stake() function
+
+    /**
+     * @notice Stake `@tokenAmount(self.getDepositedToken(): address, amount, true, 18)` to earn DAI rewards
+     * @param amount The amount to stake
+     */
     function stake(uint256 amount) public updateReward(msg.sender) {
         require(amount > 0, "Cannot stake 0");
-        ERC20 depositedToken = wrappedSct.depositedToken();
-        require(depositedToken.safeTransferFrom(msg.sender, address(this), amount), ERROR_TOKEN_TRANSFER_FROM_FAILED);
+        ERC20 stakeCapitalToken = wrappedSct.depositedToken();
+        require(stakeCapitalToken.safeTransferFrom(msg.sender, address(this), amount), ERROR_TOKEN_TRANSFER_FROM_FAILED);
+        require(stakeCapitalToken.approve(wrappedSct, amount), ERROR_TOKEN_APPROVE_FAILED);
 
         wrappedSct.depositTo(amount, msg.sender);
         emit Staked(msg.sender, amount);
     }
 
+    /**
+     * @notice Withdraw `@tokenAmount(self.getDepositedToken(): address, amount, true, 18)`
+     * @param amount The amount to withdraw
+     */
     function withdraw(uint256 amount) public updateReward(msg.sender) {
         require(amount > 0, "Cannot withdraw 0");
 
@@ -125,5 +135,9 @@ contract StablecoinRewards is AragonApp {
         lastUpdateTime = block.timestamp;
         periodFinish = block.timestamp.add(cycleManager.cycleLength());
         emit RewardAdded(reward);
+    }
+
+    function getDepositedToken() public returns (address) {
+        return address(wrappedSct.depositedToken());
     }
 }

@@ -109,8 +109,8 @@ contract Template is BaseTemplate, TokenCache {
         ITokenWrapper tokenWrapper = ITokenWrapper(_installNonDefaultApp(_dao, _appId));
         tokenWrapper.initialize(_sctToken, "Wrapped SCT", "wSCT");
 
-        _acl.createPermission(address(-1), tokenWrapper, tokenWrapper.DEPOSIT_TO_ROLE(), _teamVoting);
-        _acl.createPermission(address(-1), tokenWrapper, tokenWrapper.WITHDRAW_FOR_ROLE(), _teamVoting);
+        _acl.createPermission(ANY_ENTITY, tokenWrapper, tokenWrapper.DEPOSIT_TO_ROLE(), _teamVoting);
+        _acl.createPermission(ANY_ENTITY, tokenWrapper, tokenWrapper.WITHDRAW_FOR_ROLE(), _teamVoting);
 
         return tokenWrapper;
     }
