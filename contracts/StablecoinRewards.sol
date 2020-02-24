@@ -136,9 +136,8 @@ contract StablecoinRewards is AragonApp {
         require(stablecoin.safeTransferFrom(msg.sender, address(this), reward), ERROR_TOKEN_TRANSFER_FROM_FAILED);
 
         rewardRate = reward.div(cycleManager.cycleLength());
-
         lastUpdateTime = block.timestamp;
-        periodFinish = cycleManager.currentCycleEnd();
+        periodFinish = cycleManager.currentCycleEndTime();
 
         emit RewardAdded(reward);
     }

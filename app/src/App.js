@@ -23,7 +23,7 @@ function App() {
     stablecoinBalance,
     sctAddress,
     stablecoinAddress,
-    earned
+    stablecoinClaimable
   } = appState
 
   const [stakeAmount, setStakeAmount] = useState(0)
@@ -96,7 +96,7 @@ function App() {
 
         Stablecoin Balance: {fromDecimals(stablecoinBalance ? stablecoinBalance : "", 18)}
         <br/>
-        Stablecoin Claimable: {fromDecimals(earned ? earned : "", 18)}
+        Stablecoin Claimable: {fromDecimals(stablecoinClaimable ? stablecoinClaimable : "", 18)}
         <br/>
 
         <Button

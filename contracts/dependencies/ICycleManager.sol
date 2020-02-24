@@ -11,5 +11,5 @@ contract ICycleManager {
 
     function startNextCycle() external;
 
-    function currentCycleEnd() public view returns (uint256);
+    function currentCycleEndTime() public view returns (uint256);
 }

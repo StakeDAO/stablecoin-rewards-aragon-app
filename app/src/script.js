@@ -17,21 +17,21 @@ app.store(
       switch (event) {
         case 'Staked':
           return { ...nextState,
-            earned: await getEarned(),
+            stablecoinClaimable: await getStablecoinClaimable(),
             sctTokenWrapperBalance: await getSctTokenWrapperBalance(),
             sctBalance: await getSctBalance() }
         case 'Withdrawn':
           return { ...nextState,
-            earned: await getEarned(),
+            stablecoinClaimable: await getStablecoinClaimable(),
             sctTokenWrapperBalance: await getSctTokenWrapperBalance(),
             sctBalance: await getSctBalance() }
         case 'RewardPaid':
           return { ...nextState,
-            earned: await getEarned(),
+            stablecoinClaimable: await getStablecoinClaimable(),
             stablecoinBalance: await getStablecoinBalance() }
         case 'RewardAdded':
           return { ...nextState,
-            earned: await getEarned(),
+            stablecoinClaimable: await getStablecoinClaimable(),
             stablecoinBalance: await getStablecoinBalance() }
         case events.SYNC_STATUS_SYNCING:
           return { ...nextState, isSyncing: true }
@@ -39,7 +39,7 @@ app.store(
           return { ...nextState, isSyncing: false }
         case events.ACCOUNTS_TRIGGER:
           return { ...nextState,
-            earned: await getEarned(),
+            stablecoinClaimable: await getStablecoinClaimable(),
             sctTokenWrapperBalance: await getSctTokenWrapperBalance(),
             stablecoinBalance: await getStablecoinBalance(),
             sctBalance: await getSctBalance() }
@@ -67,7 +67,7 @@ function initializeState() {
       ...cachedState,
       sctAddress: await getSctAddress(),
       stablecoinAddress: await getStablecoinAddress(),
-      earned: await getEarned(),
+      earned: await getStablecoinClaimable(),
       sctTokenWrapperBalance: await getSctTokenWrapperBalance(),
       stablecoinBalance: await getStablecoinBalance(),
       sctBalance: await getSctBalance()
@@ -77,7 +77,7 @@ function initializeState() {
 
 const currentAddress = async () => (await app.accounts().pipe(first()).toPromise())[0]
 
-const getEarned = async () => {
+const getStablecoinClaimable = async () => {
   return await app.call('earned', await currentAddress()).toPromise()
 }
 
@@ -103,9 +103,6 @@ const getSctTokenWrapperBalance = async () => {
 }
 
 const getSctBalance = async () => {
-
-  console.log("Getting SCT Balance!!!")
-
   const userAddress = await currentAddress()
   const sctAddress = await getSctAddress()
   return await app.external(sctAddress, ERC20Abi)
