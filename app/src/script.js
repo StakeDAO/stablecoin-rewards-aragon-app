@@ -19,20 +19,20 @@ app.store(
           return { ...nextState,
             earned: await getEarned(),
             sctTokenWrapperBalance: await getSctTokenWrapperBalance(),
-            stablecoinBalance: await getStablecoinBalance(),
             sctBalance: await getSctBalance() }
         case 'Withdrawn':
           return { ...nextState,
             earned: await getEarned(),
             sctTokenWrapperBalance: await getSctTokenWrapperBalance(),
-            stablecoinBalance: await getStablecoinBalance(),
             sctBalance: await getSctBalance() }
         case 'RewardPaid':
           return { ...nextState,
             earned: await getEarned(),
-            sctBalance: await getSctBalance() }
+            stablecoinBalance: await getStablecoinBalance() }
         case 'RewardAdded':
-          return { ...nextState, earned: await getEarned() }
+          return { ...nextState,
+            earned: await getEarned(),
+            stablecoinBalance: await getStablecoinBalance() }
         case events.SYNC_STATUS_SYNCING:
           return { ...nextState, isSyncing: true }
         case events.SYNC_STATUS_SYNCED:
@@ -103,6 +103,9 @@ const getSctTokenWrapperBalance = async () => {
 }
 
 const getSctBalance = async () => {
+
+  console.log("Getting SCT Balance!!!")
+
   const userAddress = await currentAddress()
   const sctAddress = await getSctAddress()
   return await app.external(sctAddress, ERC20Abi)

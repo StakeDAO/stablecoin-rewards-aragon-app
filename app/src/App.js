@@ -47,9 +47,7 @@ function App() {
         primary="Stablecoin Rewards"
         secondary={
           <Text
-            css={`
-              ${textStyle('title2')}
-            `}
+            css={`${textStyle('title2')}`}
           />
         }
       />
@@ -66,14 +64,9 @@ function App() {
 
         SCT Balance: {fromDecimals(sctBalance ? sctBalance : "", 18)}
         <br/>
-        Wrapped SCT: {fromDecimals(sctTokenWrapperBalance ? sctTokenWrapperBalance : "", 18)}
-        <br/>
-        Stablecoin (DAI) Balance: {fromDecimals(stablecoinBalance ? stablecoinBalance : "", 18)}
-        <br/>
-        Claimable Reward: {fromDecimals(earned ? earned : "", 18)}
+        SCT Staked: {fromDecimals(sctTokenWrapperBalance ? sctTokenWrapperBalance : "", 18)}
 
         <Buttons>
-
           <div>
             <TextInput
               value={stakeAmount}
@@ -99,26 +92,32 @@ function App() {
               onClick={() => {api.withdraw(toDecimals(withdrawAmount, 18)).toPromise()}}
             />
           </div>
+        </Buttons>
 
-          <Button
-            label="Claim Reward"
-            onClick={() => api.getReward().toPromise()}
+        Stablecoin Balance: {fromDecimals(stablecoinBalance ? stablecoinBalance : "", 18)}
+        <br/>
+        Stablecoin Claimable: {fromDecimals(earned ? earned : "", 18)}
+        <br/>
+
+        <Button
+          css={`margin-top: 20px`}
+          label="Claim Reward"
+          onClick={() => api.getReward().toPromise()}
+        />
+
+        <div css={`margin-top: 40px`}>
+          <TextInput
+            value={rewardAmount}
+            onChange={event => {setRewardAmount(event.target.value)}}
           />
 
-          <div>
-            <TextInput
-              value={rewardAmount}
-              onChange={event => {setRewardAmount(event.target.value)}}
-            />
+          <Button
+            css={`margin-left: 20px`}
+            label="Distribute Reward"
+            onClick={createReward}
+          />
+        </div>
 
-            <Button
-              css={`margin-left: 20px`}
-              label="Distribute Reward"
-              onClick={createReward}
-            />
-          </div>
-
-        </Buttons>
       </Box>
     </Main>
   )
@@ -127,8 +126,9 @@ function App() {
 const Buttons = styled.div`
   display: grid;
   grid-auto-flow: row;
-  grid-gap: 40px;
+  grid-gap: 20px;
   margin-top: 20px;
+  margin-bottom: 30px;
 `
 
 export default App

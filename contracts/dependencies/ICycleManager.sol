@@ -8,4 +8,8 @@ contract ICycleManager {
     uint256 public cycleLength;
 
     function initialize(uint256 _cycleLength) public;
+
+    function startNextCycle() external;
+
+    function currentCycleEnd() public view returns (uint256);
 }

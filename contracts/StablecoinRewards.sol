@@ -81,7 +81,7 @@ contract StablecoinRewards is AragonApp {
 
 
     /**
-     * @notice Stake `@tokenAmount(self.getDepositedToken(): address, amount, true, 18)` to earn DAI rewards
+     * @notice Stake `@tokenAmount(self.getDepositedToken(): address, amount, true)` to earn DAI rewards
      * @param amount The amount to stake
      */
     function stake(uint256 amount) public updateReward(msg.sender) {
@@ -95,7 +95,7 @@ contract StablecoinRewards is AragonApp {
     }
 
     /**
-     * @notice Withdraw `@tokenAmount(self.getDepositedToken(): address, amount, true, 18)`
+     * @notice Withdraw `@tokenAmount(self.getDepositedToken(): address, amount, true)`
      * @param amount The amount to withdraw
      */
     function withdraw(uint256 amount) public updateReward(msg.sender) {
@@ -111,7 +111,7 @@ contract StablecoinRewards is AragonApp {
     }
 
     /**
-     * @notice Claim available reward amount
+     * @notice Claim all available reward
      */
     function getReward() public updateReward(msg.sender) {
         uint256 reward = earned(msg.sender);
@@ -123,8 +123,7 @@ contract StablecoinRewards is AragonApp {
     }
 
     /**
-     * @dev This must be called before a new cycle is started, to prevent any updates to cycle length effecting the calculations
-     * @notice Create a reward of `@tokenAmount(self.stablecoin: address, reward, true, 18)`
+     * @notice Create a reward of `@tokenAmount(self.stablecoin(): address, reward, true)`
      * @param reward The amount of the reward
      */
     function notifyRewardAmount(uint256 reward)
@@ -132,17 +131,15 @@ contract StablecoinRewards is AragonApp {
     auth(CREATE_REWARD_ROLE)
     updateReward(address(0))
     {
+        cycleManager.startNextCycle();
+
         require(stablecoin.safeTransferFrom(msg.sender, address(this), reward), ERROR_TOKEN_TRANSFER_FROM_FAILED);
 
-        if (block.timestamp >= periodFinish) {
-            rewardRate = reward.div(cycleManager.cycleLength());
-        } else {
-            uint256 remainingTime = periodFinish.sub(block.timestamp);
-            uint256 leftoverReward = remainingTime.mul(rewardRate);
-            rewardRate = reward.add(leftoverReward).div(cycleManager.cycleLength());
-        }
+        rewardRate = reward.div(cycleManager.cycleLength());
+
         lastUpdateTime = block.timestamp;
-        periodFinish = block.timestamp.add(cycleManager.cycleLength());
+        periodFinish = cycleManager.currentCycleEnd();
+
         emit RewardAdded(reward);
     }
 

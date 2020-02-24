@@ -9,9 +9,6 @@ import "../StablecoinRewards.sol";
 
 contract Template is BaseTemplate, TokenCache {
 
-    // token-wrapper-sc.open.aragonpm.eth for local deployment
-//    bytes32 constant internal TOKEN_WRAPPER_ID = 0x3482986293858da5c1bbfd8098f815afbef521eccb1f1739244610fc0bebb10a;
-
     string constant private ERROR_EMPTY_HOLDERS = "TEMPLATE_EMPTY_HOLDERS";
     string constant private ERROR_BAD_HOLDERS_STAKES_LEN = "TEMPLATE_BAD_HOLDERS_STAKES_LEN";
     string constant private ERROR_BAD_VOTE_SETTINGS = "TEMPLATE_BAD_VOTE_SETTINGS";
@@ -95,7 +92,7 @@ contract Template is BaseTemplate, TokenCache {
 
     function _setupCycleManager(Kernel _dao, ACL _acl, Voting _voting) internal returns (ICycleManager) {
         bytes32 _appId = keccak256(abi.encodePacked(apmNamehash("open"), keccak256("cycle-manager")));
-        bytes memory initializeData = abi.encodeWithSelector(ICycleManager(0).initialize.selector, 50);
+        bytes memory initializeData = abi.encodeWithSelector(ICycleManager(0).initialize.selector, 60);
         ICycleManager cycleManager = ICycleManager(_installDefaultApp(_dao, _appId, initializeData));
 
         _acl.createPermission(ANY_ENTITY, cycleManager, cycleManager.UPDATE_CYCLE_ROLE(), _voting);

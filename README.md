@@ -38,7 +38,7 @@ $ npx aragon devchain
 
 5) Deploy mock SCT and DAI and tokens:
 ```
-$ truffle exec scripts/deployTokens.sol --network rpc
+$ truffle exec scripts/deployTokens.js --network rpc
 ```
 Copy the SCT and DAI token addresses output to the `package.json` script `start:http:template` directly after the `--template-args` arg
 replacing the 2 addresses that are there already.
