@@ -20,10 +20,12 @@ function App() {
     isSyncing,
     sctBalance,
     sctTokenWrapperBalance,
-    stablecoinBalance,
+    userStablecoinBalance,
+    appStablecoinBalance,
     sctAddress,
     stablecoinAddress,
-    stablecoinClaimable
+    stablecoinClaimable,
+    rewardRate
   } = appState
 
   const [stakeAmount, setStakeAmount] = useState(0)
@@ -94,18 +96,24 @@ function App() {
           </div>
         </Buttons>
 
-        Stablecoin Balance: {fromDecimals(stablecoinBalance ? stablecoinBalance : "", 18)}
+        User Stablecoin Balance: {fromDecimals(userStablecoinBalance ? userStablecoinBalance : "", 18)}
         <br/>
         Stablecoin Claimable: {fromDecimals(stablecoinClaimable ? stablecoinClaimable : "", 18)}
         <br/>
 
         <Button
-          css={`margin-top: 20px`}
+          css={`margin-top: 20px;
+                margin-bottom: 30px;`}
           label="Claim Reward"
           onClick={() => api.getReward().toPromise()}
         />
+        <br/>
 
-        <div css={`margin-top: 40px`}>
+        App Stablecoin Balance: {fromDecimals(appStablecoinBalance ? appStablecoinBalance : "", 18)}
+        <br/>
+        Total Reward Rate (per second): {fromDecimals(rewardRate ? rewardRate : "", 18)}
+
+        <div css={`margin-top: 20px`}>
           <TextInput
             value={rewardAmount}
             onChange={event => {setRewardAmount(event.target.value)}}

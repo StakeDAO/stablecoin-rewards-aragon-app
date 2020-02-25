@@ -28,11 +28,15 @@ app.store(
         case 'RewardPaid':
           return { ...nextState,
             stablecoinClaimable: await getStablecoinClaimable(),
-            stablecoinBalance: await getStablecoinBalance() }
+            userStablecoinBalance: await getUserStablecoinBalance(),
+            appStablecoinBalance: await getAppStablecoinBalance()
+            }
         case 'RewardAdded':
           return { ...nextState,
             stablecoinClaimable: await getStablecoinClaimable(),
-            stablecoinBalance: await getStablecoinBalance() }
+            userStablecoinBalance: await getUserStablecoinBalance(),
+            appStablecoinBalance: await getAppStablecoinBalance(),
+            rewardRate: await getRewardRate() }
         case events.SYNC_STATUS_SYNCING:
           return { ...nextState, isSyncing: true }
         case events.SYNC_STATUS_SYNCED:
@@ -41,7 +45,7 @@ app.store(
           return { ...nextState,
             stablecoinClaimable: await getStablecoinClaimable(),
             sctTokenWrapperBalance: await getSctTokenWrapperBalance(),
-            stablecoinBalance: await getStablecoinBalance(),
+            userStablecoinBalance: await getUserStablecoinBalance(),
             sctBalance: await getSctBalance() }
         default:
           return state
@@ -63,19 +67,26 @@ app.store(
 
 function initializeState() {
   return async cachedState => {
+
+    console.log("ASDFASD")
+
     return {
       ...cachedState,
       sctAddress: await getSctAddress(),
       stablecoinAddress: await getStablecoinAddress(),
       earned: await getStablecoinClaimable(),
       sctTokenWrapperBalance: await getSctTokenWrapperBalance(),
-      stablecoinBalance: await getStablecoinBalance(),
-      sctBalance: await getSctBalance()
+      userStablecoinBalance: await getUserStablecoinBalance(),
+      appStablecoinBalance: await getAppStablecoinBalance(),
+      sctBalance: await getSctBalance(),
+      rewardRate: await getRewardRate()
     }
   }
 }
 
 const currentAddress = async () => (await app.accounts().pipe(first()).toPromise())[0]
+
+const appAddress = async () => (await app.currentApp().toPromise()).appAddress
 
 const getStablecoinClaimable = async () => {
   return await app.call('earned', await currentAddress()).toPromise()
@@ -110,10 +121,25 @@ const getSctBalance = async () => {
     .toPromise()
 }
 
-const getStablecoinBalance = async () => {
+const getUserStablecoinBalance = async () => {
   const address = await currentAddress()
+  return await getStablecoinBalance(address)
+}
+
+const getAppStablecoinBalance = async () => {
+  const address = await appAddress()
+  return await getStablecoinBalance(address)
+}
+
+const getStablecoinBalance = async (address) => {
   return await app.call('stablecoin').pipe(
     map(stablecoinAddress => app.external(stablecoinAddress, ERC20Abi)),
     mergeMap(stablecoin => stablecoin.balanceOf(address))
   ).toPromise()
 }
+
+const getRewardRate = async () => {
+  return await app.call('rewardRate').toPromise()
+}
+
+

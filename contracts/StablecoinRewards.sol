@@ -3,10 +3,10 @@ pragma solidity ^0.4.24;
 import "@aragon/os/contracts/apps/AragonApp.sol";
 import "@aragon/os/contracts/lib/math/SafeMath.sol";
 import "@aragon/os/contracts/lib/token/ERC20.sol";
+import "@aragon/apps-vault/contracts/Vault.sol";
 import "./dependencies/ICycleManager.sol";
 import "./dependencies/ITokenWrapper.sol";
 
-// TODO: Consider generalizing the naming, replacing stablecoin with something more generic.
 contract StablecoinRewards is AragonApp {
     using SafeMath for uint256;
     using SafeERC20 for ERC20;
@@ -25,6 +25,7 @@ contract StablecoinRewards is AragonApp {
 
     ICycleManager public cycleManager;
     ITokenWrapper public wrappedSct;
+    Vault public vault;
     ERC20 public stablecoin;
 
     event RewardAdded(uint256 reward);
@@ -42,9 +43,10 @@ contract StablecoinRewards is AragonApp {
         _;
     }
 
-    function initialize(ICycleManager _cycleManager, ITokenWrapper _wrappedSct, ERC20 _stablecoin) public onlyInit {
+    function initialize(ICycleManager _cycleManager, ITokenWrapper _wrappedSct, Vault _vault, ERC20 _stablecoin) public onlyInit {
         cycleManager = _cycleManager;
         wrappedSct = _wrappedSct;
+        vault = _vault;
         stablecoin = _stablecoin;
         initialized();
     }
@@ -81,7 +83,7 @@ contract StablecoinRewards is AragonApp {
 
 
     /**
-     * @notice Stake `@tokenAmount(self.getDepositedToken(): address, amount, true)` to earn DAI rewards
+     * @notice Stake `@tokenAmount(self.getDepositedToken(): address, amount, true)` to earn stablecoin rewards
      * @param amount The amount to stake
      */
     function stake(uint256 amount) public updateReward(msg.sender) {
@@ -126,14 +128,9 @@ contract StablecoinRewards is AragonApp {
      * @notice Create a reward of `@tokenAmount(self.stablecoin(): address, reward, true)`
      * @param reward The amount of the reward
      */
-    function notifyRewardAmount(uint256 reward)
-    external
-    auth(CREATE_REWARD_ROLE)
-    updateReward(address(0))
-    {
+    function notifyRewardAmount(uint256 reward) external auth(CREATE_REWARD_ROLE) updateReward(address(0)) {
         cycleManager.startNextCycle();
-
-        require(stablecoin.safeTransferFrom(msg.sender, address(this), reward), ERROR_TOKEN_TRANSFER_FROM_FAILED);
+        vault.transfer(address(stablecoin), address(this), reward);
 
         rewardRate = reward.div(cycleManager.cycleLength());
         lastUpdateTime = block.timestamp;
