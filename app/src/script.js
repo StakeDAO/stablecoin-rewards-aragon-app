@@ -67,14 +67,11 @@ app.store(
 
 function initializeState() {
   return async cachedState => {
-
-    console.log("ASDFASD")
-
     return {
       ...cachedState,
       sctAddress: await getSctAddress(),
       stablecoinAddress: await getStablecoinAddress(),
-      earned: await getStablecoinClaimable(),
+      stablecoinClaimable: await getStablecoinClaimable(),
       sctTokenWrapperBalance: await getSctTokenWrapperBalance(),
       userStablecoinBalance: await getUserStablecoinBalance(),
       appStablecoinBalance: await getAppStablecoinBalance(),

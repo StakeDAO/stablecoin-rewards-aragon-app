@@ -37,11 +37,6 @@ function App() {
     api.stake(stakeAmountWithDecimals, {token: { address: sctAddress, value: stakeAmountWithDecimals }, gas: 500000 }).toPromise()
   }
 
-  const createReward = () => {
-    const rewardAmountWithDecimals = toDecimals(rewardAmount, 18)
-    api.notifyRewardAmount(rewardAmountWithDecimals,  {token: { address: stablecoinAddress, value: rewardAmountWithDecimals }, gas: 500000 }).toPromise()
-  }
-
   return (
     <Main>
       {isSyncing && <SyncIndicator />}
@@ -122,7 +117,7 @@ function App() {
           <Button
             css={`margin-left: 20px`}
             label="Distribute Reward"
-            onClick={createReward}
+            onClick={() => api.notifyRewardAmount(toDecimals(rewardAmount, 18)).toPromise()}
           />
         </div>
 

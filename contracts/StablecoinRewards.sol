@@ -3,7 +3,7 @@ pragma solidity ^0.4.24;
 import "@aragon/os/contracts/apps/AragonApp.sol";
 import "@aragon/os/contracts/lib/math/SafeMath.sol";
 import "@aragon/os/contracts/lib/token/ERC20.sol";
-import "@aragon/apps-vault/contracts/Vault.sol";
+import "@aragon/apps-agent/contracts/Agent.sol";
 import "./dependencies/ICycleManager.sol";
 import "./dependencies/ITokenWrapper.sol";
 
@@ -25,7 +25,7 @@ contract StablecoinRewards is AragonApp {
 
     ICycleManager public cycleManager;
     ITokenWrapper public wrappedSct;
-    Vault public vault;
+    Agent public agent;
     ERC20 public stablecoin;
 
     event RewardAdded(uint256 reward);
@@ -43,10 +43,10 @@ contract StablecoinRewards is AragonApp {
         _;
     }
 
-    function initialize(ICycleManager _cycleManager, ITokenWrapper _wrappedSct, Vault _vault, ERC20 _stablecoin) public onlyInit {
+    function initialize(ICycleManager _cycleManager, ITokenWrapper _wrappedSct, Agent _agent, ERC20 _stablecoin) public onlyInit {
         cycleManager = _cycleManager;
         wrappedSct = _wrappedSct;
-        vault = _vault;
+        agent = _agent;
         stablecoin = _stablecoin;
         initialized();
     }
@@ -130,7 +130,7 @@ contract StablecoinRewards is AragonApp {
      */
     function notifyRewardAmount(uint256 reward) external auth(CREATE_REWARD_ROLE) updateReward(address(0)) {
         cycleManager.startNextCycle();
-        vault.transfer(address(stablecoin), address(this), reward);
+        agent.transfer(address(stablecoin), address(this), reward);
 
         rewardRate = reward.div(cycleManager.cycleLength());
         lastUpdateTime = block.timestamp;

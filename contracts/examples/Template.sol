@@ -70,37 +70,33 @@ contract Template is BaseTemplate, TokenCache {
         _ensureTemplateSettings(_holders, _stakes, _votingSettings);
 
         (Kernel dao, ACL acl) = _createDAO();
-        (Voting voting, Vault vault, Finance finance) = _setupBaseApps(dao, acl, _holders, _stakes, _votingSettings);
+        (Voting voting, Agent agent, Finance finance) = _setupBaseApps(dao, acl, _holders, _stakes, _votingSettings);
 
         tokenWrapper = _setupTokenWrapper(dao, acl, _sctToken, voting);
         cycleManager = _setupCycleManager(dao, acl, voting);
-        stablecoinRewards = _setupStablecoinRewards(dao, acl, voting, cycleManager, tokenWrapper, vault, _stablecoin);
+        stablecoinRewards = _setupStablecoinRewards(dao, acl, voting, cycleManager, tokenWrapper, agent, _stablecoin);
 
-        _createVaultPermissions(acl, vault, stablecoinRewards, address(this));
-        acl.grantPermission(finance, vault, vault.TRANSFER_ROLE());
-        acl.setPermissionManager(voting, vault, vault.TRANSFER_ROLE());
-
+        _setupAgentPermissions(acl, agent, finance, voting, stablecoinRewards, _stablecoin);
         _setupCustomAppPermissions(acl, tokenWrapper, cycleManager, stablecoinRewards, voting);
-
         _transferRootPermissionsFromTemplateAndFinalizeDAO(dao, voting);
     }
 
     function _setupBaseApps(Kernel _dao, ACL _acl, address[] memory _holders, uint256[] memory _stakes, uint64[3] memory _votingSettings)
-        internal returns (Voting, Vault, Finance)
+        internal returns (Voting, Agent, Finance)
     {
         MiniMeToken token = _popTokenCache(msg.sender);
         TokenManager tokenManager = _installTokenManagerApp(_dao, token, TOKEN_TRANSFERABLE, TOKEN_MAX_PER_ACCOUNT);
         Voting voting = _installVotingApp(_dao, token, _votingSettings);
-        Vault vault = _installVaultApp(_dao);
-        Finance finance = _installFinanceApp(_dao, vault, uint64(1 days));
+        Agent agent = _installDefaultAgentApp(_dao);
+        Finance finance = _installFinanceApp(_dao, agent, uint64(1 days));
 
         _mintTokens(_acl, tokenManager, _holders, _stakes);
-        _setupBasePermissions(_acl, voting, tokenManager, finance);
+        _setupBasePermissions(_acl, voting, tokenManager, agent, finance);
 
-        return (voting, vault, finance);
+        return (voting, agent, finance);
     }
 
-    function _setupBasePermissions(ACL _acl, Voting _voting, TokenManager _tokenManager, Finance _finance) internal {
+    function _setupBasePermissions(ACL _acl, Voting _voting, TokenManager _tokenManager, Agent _agent, Finance _finance) internal {
         _createEvmScriptsRegistryPermissions(_acl, _voting, _voting);
         _createVotingPermissions(_acl, _voting, _voting, _tokenManager, _voting);
         _createTokenManagerPermissions(_acl, _tokenManager, _voting, _voting);
@@ -123,16 +119,27 @@ contract Template is BaseTemplate, TokenCache {
         return cycleManager;
     }
 
-    function _setupStablecoinRewards(Kernel _dao, ACL _acl, Voting _voting, ICycleManager _cycleManager, ITokenWrapper _tokenWrapper, Vault _vault, ERC20 _stablecoin)
+    function _setupStablecoinRewards(Kernel _dao, ACL _acl, Voting _voting, ICycleManager _cycleManager, ITokenWrapper _tokenWrapper, Agent _agent, ERC20 _stablecoin)
         internal returns (StablecoinRewards)
     {
         bytes32 _appId = keccak256(abi.encodePacked(apmNamehash("open"), keccak256("stablecoin-rewards")));
-        bytes memory initializeData = abi.encodeWithSelector(StablecoinRewards(0).initialize.selector, _cycleManager, _tokenWrapper, _vault, _stablecoin);
+        bytes memory initializeData = abi.encodeWithSelector(StablecoinRewards(0).initialize.selector, _cycleManager, _tokenWrapper, _agent, _stablecoin);
         StablecoinRewards stablecoinRewards = StablecoinRewards(_installDefaultApp(_dao, _appId, initializeData));
 
         _acl.createPermission(ANY_ENTITY, stablecoinRewards, stablecoinRewards.CREATE_REWARD_ROLE(), _voting);
 
         return stablecoinRewards;
+    }
+
+    function _setupAgentPermissions(ACL _acl, Agent _agent, Finance _finance, Voting _voting, StablecoinRewards _stablecoinRewards, ERC20 _stablecoin) internal {
+        _acl.createPermission(_finance, _agent, _agent.TRANSFER_ROLE(), address(this));
+        _acl.grantPermission(_stablecoinRewards, _agent, _agent.TRANSFER_ROLE());
+        _acl.setPermissionManager(_voting, _agent, _agent.TRANSFER_ROLE());
+
+        _acl.createPermission(address(this), _agent, _agent.ADD_PROTECTED_TOKEN_ROLE(), address(this));
+        _agent.addProtectedToken(_stablecoin);
+        _acl.revokePermission(address(this), _agent, _agent.ADD_PROTECTED_TOKEN_ROLE());
+        _acl.setPermissionManager(_voting, _agent, _agent.ADD_PROTECTED_TOKEN_ROLE());
     }
 
     function _setupCustomAppPermissions(ACL _acl, ITokenWrapper _tokenWrapper, ICycleManager _cycleManager, StablecoinRewards _stablecoinRewards, Voting _teamVoting)
