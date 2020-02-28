@@ -43,10 +43,14 @@ app.store(
           return { ...nextState, isSyncing: false }
         case events.ACCOUNTS_TRIGGER:
           return { ...nextState,
+            sctAddress: await getSctAddress(),
+            stablecoinAddress: await getStablecoinAddress(),
             stablecoinClaimable: await getStablecoinClaimable(),
             sctTokenWrapperBalance: await getSctTokenWrapperBalance(),
             userStablecoinBalance: await getUserStablecoinBalance(),
-            sctBalance: await getSctBalance() }
+            appStablecoinBalance: await getAppStablecoinBalance(),
+            sctBalance: await getSctBalance(),
+            rewardRate: await getRewardRate() }
         default:
           return state
       }
@@ -67,17 +71,26 @@ app.store(
 
 function initializeState() {
   return async cachedState => {
-    return {
-      ...cachedState,
-      sctAddress: await getSctAddress(),
-      stablecoinAddress: await getStablecoinAddress(),
-      stablecoinClaimable: await getStablecoinClaimable(),
-      sctTokenWrapperBalance: await getSctTokenWrapperBalance(),
-      userStablecoinBalance: await getUserStablecoinBalance(),
-      appStablecoinBalance: await getAppStablecoinBalance(),
-      sctBalance: await getSctBalance(),
-      rewardRate: await getRewardRate()
+
+    let newState = { ...cachedState }
+
+    try {
+      newState = {
+        ...cachedState,
+        sctAddress: await getSctAddress(),
+        stablecoinAddress: await getStablecoinAddress(),
+        stablecoinClaimable: await getStablecoinClaimable(),
+        sctTokenWrapperBalance: await getSctTokenWrapperBalance(),
+        userStablecoinBalance: await getUserStablecoinBalance(),
+        appStablecoinBalance: await getAppStablecoinBalance(),
+        sctBalance: await getSctBalance(),
+        rewardRate: await getRewardRate()
+      }
+    } catch (error) {
+      console.error("Init error: ", error)
     }
+
+    return newState
   }
 }
 
