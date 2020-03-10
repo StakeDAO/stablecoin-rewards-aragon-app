@@ -5,6 +5,13 @@ import { first, mergeMap, map } from 'rxjs/operators'
 import ERC20Abi from './abi/erc20-abi'
 import TokenWrapperAbi from './abi/token-wrapper-interface-abi'
 
+const DEBUG_LOGS = true
+const debugLog = message => {
+  if (DEBUG_LOGS) {
+    console.debug(message)
+  }
+}
+
 const app = new Aragon()
 
 app.store(
@@ -16,32 +23,39 @@ app.store(
     try {
       switch (event) {
         case 'Staked':
+          debugLog("Staked")
           return { ...nextState,
             stablecoinClaimable: await getStablecoinClaimable(),
             sctTokenWrapperBalance: await getSctTokenWrapperBalance(),
             sctBalance: await getSctBalance() }
         case 'Withdrawn':
+          debugLog("Withdrawn")
           return { ...nextState,
             stablecoinClaimable: await getStablecoinClaimable(),
             sctTokenWrapperBalance: await getSctTokenWrapperBalance(),
             sctBalance: await getSctBalance() }
         case 'RewardPaid':
+          debugLog("RewardPaid")
           return { ...nextState,
             stablecoinClaimable: await getStablecoinClaimable(),
             userStablecoinBalance: await getUserStablecoinBalance(),
             appStablecoinBalance: await getAppStablecoinBalance()
             }
         case 'RewardAdded':
+          debugLog("RewardAdded")
           return { ...nextState,
             stablecoinClaimable: await getStablecoinClaimable(),
             userStablecoinBalance: await getUserStablecoinBalance(),
             appStablecoinBalance: await getAppStablecoinBalance(),
             rewardRate: await getRewardRate() }
         case events.SYNC_STATUS_SYNCING:
+          debugLog("SYNC_STATUS_SYNCING")
           return { ...nextState, isSyncing: true }
         case events.SYNC_STATUS_SYNCED:
+          debugLog("SYNC_STATUS_SYNCED")
           return { ...nextState, isSyncing: false }
         case events.ACCOUNTS_TRIGGER:
+          debugLog("ACCOUNTS_TRIGGER")
           return { ...nextState,
             sctAddress: await getSctAddress(),
             stablecoinAddress: await getStablecoinAddress(),
@@ -54,12 +68,13 @@ app.store(
         default:
           return state
       }
-    } catch (err) {
-      console.log(err)
+    } catch (error) {
+      console.error("Event error: ", error)
+      return state
     }
   },
   {
-    init: initializeState(),
+    init: initializeState()
   }
 )
 
